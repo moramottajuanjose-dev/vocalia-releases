@@ -16,11 +16,22 @@
 #   curl -fsSL https://raw.githubusercontent.com/moramottajuanjose-dev/vocalia-releases/main/instalar-mac.sh | bash
 #
 # O, si ya descargaste el .dmg tú mismo:
-#   bash instalar-mac.sh ~/Downloads/Vocalia-0.1.0.dmg
+#   bash instalar-mac.sh ~/Downloads/Vocalia-X.Y.Z.dmg
 set -euo pipefail
 
-RELEASE_URL="https://github.com/moramottajuanjose-dev/vocalia-releases/releases/download/v0.1.0/Vocalia-0.1.0.dmg"
+REPO="moramottajuanjose-dev/vocalia-releases"
 APP_NAME="Vocalia.app"
+
+# Pregunta cuál es la última versión publicada en vez de llevarla escrita:
+# GitHub redirige /releases/latest a /releases/tag/<etiqueta>, y de esa
+# etiqueta sale el nombre del archivo. Así el script no se queda bajando una
+# versión vieja cada vez que se publica una nueva.
+latest_dmg_url() {
+  local final tag
+  final="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "https://github.com/$REPO/releases/latest")"
+  tag="${final##*/}"
+  echo "https://github.com/$REPO/releases/download/$tag/Vocalia-${tag#v}.dmg"
+}
 
 manual_steps() {
   cat <<'EOF'
@@ -53,8 +64,9 @@ if [ "${1:-}" != "" ]; then
   echo "Usando: $DMG"
 else
   DMG="$(mktemp -d)/Vocalia.dmg"
-  echo "Descargando..."
-  curl -fsSL -o "$DMG" "$RELEASE_URL"
+  URL="$(latest_dmg_url)"
+  echo "Descargando ${URL##*/}..."
+  curl -fsSL -o "$DMG" "$URL"
 fi
 
 # Quita cualquier marca que dispare el aviso. `-c` limpia lo que se puede;
